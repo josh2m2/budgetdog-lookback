@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Your Free Money Snapshot</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Barlow+Semi+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ── CHANGE THIS LINE to your Railway/backend URL once deployed ── */
+/* Also update API_URL in the <script> section at the bottom.      */
+
+:root {
+  --brand-gold: #C5A54B;
+  --brand-gold-hover: #b4943a;
+  --brand-gold-light: #FFF8E7;
+  --brand-red: #cc0000;
+  --brand-green: #2e7d32;
+  --light-gray: #f9f9f9;
+  --border-gray: #e0e0e0;
+  --text-dark: #222;
+  --text-mid: #555;
+  --text-light: #888;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Roboto', sans-serif;
+  color: var(--text-dark);
+  background: #1c1c1c;
+  line-height: 1.6;
+}
+
+.container {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 20px;
+}
+
+/* ── UPLOAD FORM ── */
+
+#upload-form { animation: fadeIn 0.3s ease; }
+
+.form-heading {
+  font-family: 'Barlow Semi Condensed', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.form-subheading {
+  font-size: 0.95rem;
+  color: #aaa;
+  margin-bottom: 28px;
+  line-height: 1.5;
+}
+
+.field-group { margin-bottom: 16px; }
+
+.field-group label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.field-group input[type="text"],
+.field-group input[type="email"],
+.field-group input[type="tel"] {
+  width: 100%;
+  padding: 14px 16px;
+  font-size: 1rem;
+  border: 2px solid var(--border-gray);
+  border-radius: 8px;
+  font-family: 'Roboto', sans-serif;
+  background: var(--light-gray);
+  transition: border-color 0.2s;
+}
+
+.field-group input:focus {
+  outline: none;
+  border-color: var(--brand-gold);
+  background: #fff;
+}
+
+/* File upload zone */
+.upload-zone {
+  border: 2px dashed var(--border-gray);
+  border-radius: 12px;
+  padding: 32px 20px;
+  text-align: center;
+  background: var(--light-gray);
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 8px;
+  position: relative;
+}
+
+.upload-zone:hover,
+.upload-zone.drag-over {
+  border-color: var(--brand-gold);
+  background: var(--brand-gold-light);
+}
+
+.upload-zone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+.upload-icon {
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+}
+
+.upload-zone-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 4px;
+}
+
+.upload-zone-sub {
+  font-size: 0.85rem;
+  color: var(--text-mid);
+}
+
+.file-list {
+  margin-bottom: 20px;
+  min-height: 0;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #fff;
+  border: 1px solid var(--border-gray);
+  border-radius: 8px;
+  margin-top: 8px;
+  font-size: 0.9rem;
+  color: var(--text-mid);
+}
+
+.file-item-icon { color: var(--brand-gold); font-size: 1.1rem; }
+
+.file-remove {
+  margin-left: auto;
+  cursor: pointer;
+  color: var(--text-light);
+  font-size: 1.1rem;
+  line-height: 1;
+  background: none;
+  border: none;
+  padding: 0 4px;
+}
+
+.file-remove:hover { color: var(--brand-red); }
+
+.upload-hint {
+  font-size: 0.8rem;
+  color: var(--text-light);
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.btn-submit {
+  display: block;
+  width: 100%;
+  padding: 18px 24px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  font-family: 'Roboto', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: center;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: var(--brand-gold);
+  color: #fff;
+  transition: background 0.2s;
+}
+
+.btn-submit:hover { background: var(--brand-gold-hover); }
+.btn-submit:disabled { background: #aaa; cursor: not-allowed; }
+
+.privacy-note {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 14px;
+}
+
+/* ── LOADING STATE ── */
+
+#loading { display: none; text-align: center; padding: 60px 20px; animation: fadeIn 0.3s ease; }
+
+.spinner {
+  width: 56px; height: 56px;
+  border: 5px solid #f0f0f0;
+  border-top-color: var(--brand-gold);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+  margin: 0 auto 24px;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loading-title {
+  font-family: 'Barlow Semi Condensed', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.loading-sub { font-size: 0.9rem; color: #aaa; }
+
+/* ── RESULTS ── */
+
+#results { display: none; animation: fadeIn 0.4s ease; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.results-intro {
+  text-align: center;
+  margin-bottom: 28px;
+  padding-top: 20px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #333;
+}
+
+.results-intro h2 {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #fff;
+  margin-bottom: 16px;
+}
+
+.headline-stat {
+  font-family: 'Barlow Semi Condensed', sans-serif;
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: var(--brand-gold);
+  letter-spacing: -1px;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.headline-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.headline-sub { font-size: 0.85rem; color: #aaa; }
+
+/* Category breakdown */
+.section-title {
+  font-family: 'Barlow Semi Condensed', sans-serif;
+  font-size: 2.2rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-align: center;
+  color: #fff;
+  margin-top: 44px;
+  margin-bottom: 16px;
+}
+
+.categories-card {
+  background: #fff;
+  border: 1px solid var(--border-gray);
+  border-radius: 12px;
+  padding: 24px 20px;
+  margin-bottom: 20px;
+}
+
+.bar-row { margin-bottom: 14px; }
+
+.bar-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 5px;
+}
+
+.bar-label { font-size: 0.85rem; color: var(--text-mid); font-weight: 600; }
+.bar-label-detail { font-size: 0.75rem; color: var(--text-light); margin-left: 6px; font-weight: 400; }
+.bar-value { font-family: 'Barlow Semi Condensed', sans-serif; font-size: 1.1rem; font-weight: 700; }
+.bar-value.gold { color: var(--brand-gold); }
+.bar-value.red  { color: var(--brand-red); }
+.bar-value.dark { color: #333; }
+
+.bar-track { height: 26px; background: #f0f0f0; border-radius: 13px; overflow: hidden; }
+.bar-fill  { height: 100%; border-radius: 13px; transition: width 1s ease; }
+.bar-fill.gold  { background: var(--brand-gold); }
+.bar-fill.red   { background: var(--brand-red); opacity: 0.85; }
+.bar-fill.green { background: var(--brand-green); }
+
+.bar-benchmark {
+  font-size: 0.75rem;
+  color: var(--text-light);
+  margin-top: 4px;
+}
+
+.bar-benchmark.elevated { color: #b8860b; }
+.bar-benchmark.high     { color: var(--brand-red); }
+
+.trend-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.trend-up   { background: #fce8e6; color: var(--brand-red); }
+.trend-down { background: #e8f5e9; color: var(--brand-green); }
+
+/* Revelation cards */
+.result-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  background: #fff;
+  border: 1px solid var(--border-gray);
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 12px;
+}
+
+.card-icon {
+  flex-shrink: 0;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem;
+}
+
+.card-icon.spike { background: #fce8e6; }
+.card-icon.subscription { background: #fff3e0; }
+.card-icon.fee { background: #fce8e6; }
+.card-icon.pattern { background: #e3f2fd; }
+
+.card-content { flex: 1; }
+.card-headline { font-size: 1rem; font-weight: 700; margin-bottom: 4px; color: var(--text-dark); }
+.card-detail   { font-size: 0.88rem; color: var(--text-mid); line-height: 1.5; }
+.card-impact   { font-size: 0.8rem; font-weight: 700; color: var(--brand-gold); margin-top: 6px; }
+
+/* Subscriptions section */
+.subs-card {
+  background: #fff;
+  border: 1px solid var(--border-gray);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.sub-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border-gray);
+  font-size: 0.9rem;
+}
+
+.sub-item:last-child { border-bottom: none; }
+.sub-name { color: var(--text-dark); font-weight: 500; }
+.sub-cost { font-family: 'Barlow Semi Condensed', sans-serif; font-size: 1rem; font-weight: 700; color: var(--text-dark); }
+.sub-warn { font-size: 0.7rem; font-weight: 700; color: var(--brand-red); margin-left: 6px; }
+
+.subs-total {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 2px solid var(--border-gray);
+  font-weight: 700;
+}
+
+.subs-total-label { font-size: 0.9rem; }
+.subs-total-val {
+  font-family: 'Barlow Semi Condensed', sans-serif;
+  font-size: 1.2rem;
+  color: var(--brand-gold);
+}
+
+/* Fees callout */
+.fees-callout {
+  background: #fce8e6;
+  border-left: 4px solid var(--brand-red);
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+
+.fees-callout-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--brand-red);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.fee-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.88rem;
+  color: var(--text-mid);
+  padding: 3px 0;
+}
+
+.fee-total {
+  margin-top: 8px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--brand-red);
+}
+
+/* CTA section */
+.cta-section { margin-top: 28px; }
+
+.cta-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.cta-section-header span {
+  font-family: 'Barlow Semi Condensed', sans-serif;
+  font-size: 30px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: var(--brand-gold);
+  line-height: 1;
+}
+
+.btn-cta {
+  display: block;
+  width: 100%;
+  padding: 20px 24px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-family: 'Roboto', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: center;
+  text-decoration: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #00c213;
+  color: #fff;
+  border: 2px solid #fff;
+  transition: background 0.2s;
+  margin-bottom: 10px;
+}
+
+.btn-cta:hover { background: #00a810; }
+
+.cta-helper {
+  font-size: 0.9rem;
+  color: #fff;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.4;
+  margin-bottom: 28px;
+}
+
+.disclaimer {
+  font-size: 0.78rem;
+  text-align: center;
+  color: var(--text-light);
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-gray);
+}
+
+/* Error state */
+#error-state {
+  display: none;
+  background: #fce8e6;
+  border: 1px solid #f5c6cb;
+  border-radius: 12px;
+  padding: 24px 20px;
+  text-align: center;
+  animation: fadeIn 0.3s ease;
+}
+
+.error-title { font-weight: 700; color: var(--brand-red); margin-bottom: 8px; }
+.error-msg   { font-size: 0.9rem; color: var(--text-mid); margin-bottom: 16px; }
+.btn-retry {
+  padding: 10px 24px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  background: var(--brand-gold);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Roboto', sans-serif;
+}
+.btn-retry:hover { background: var(--brand-gold-hover); }
+
+@media (max-width: 480px) {
+  .container { padding: 16px 14px; }
+  .headline-stat { font-size: 2.8rem; }
+  .result-card { gap: 12px; padding: 14px 16px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── UPLOAD FORM ── -->
+  <div id="upload-form">
+    <div style="text-align:center;padding-top:20px;margin-bottom:24px;">
+      <img src="https://assets.cdn.filesafe.space/IKw1E7VUZwSDe8WFAxIM/media/68f11ca74711d51c4dae071c.png"
+           alt="Budgetdog" style="width:180px;display:block;margin:0 auto 24px;" />
+      <div style="font-family:'Barlow Semi Condensed',sans-serif;font-size:2.9rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#fff;line-height:1.1;margin-bottom:16px;">
+        Your Free<br>Money Snapshot
+      </div>
+      <p style="font-size:1.1rem;color:#ddd;line-height:1.7;margin:0;">
+        Upload your last 3 months of bank and credit card statements.<br>
+        We'll find the hidden money you didn't know was there.
+      </p>
+    </div>
+
+    <div class="field-group">
+      <label>First Name</label>
+      <input type="text" id="f-name" placeholder="e.g. Sarah" />
+    </div>
+    <div class="field-group">
+      <label>Email</label>
+      <input type="email" id="f-email" placeholder="you@email.com" />
+    </div>
+    <div class="field-group">
+      <label>Phone</label>
+      <input type="tel" id="f-phone" placeholder="e.g. 555-123-4567" />
+    </div>
+
+    <div class="field-group">
+      <label>Upload Statements (PDF)</label>
+      <div class="upload-zone" id="upload-zone">
+        <input type="file" id="f-files" multiple accept=".pdf" />
+        <div class="upload-icon">📄</div>
+        <div class="upload-zone-title">Drop files here or tap to select</div>
+        <div class="upload-zone-sub">Bank statements + credit card statements · PDF only</div>
+      </div>
+      <div class="file-list" id="file-list"></div>
+    </div>
+
+    <div class="upload-hint">
+      🔒 Your statements are processed securely and never stored.
+      We read them once to generate your snapshot, then they're gone.
+    </div>
+
+    <button class="btn-submit" id="btn-submit" onclick="submitForm()">
+      Find My Hidden Money →
+    </button>
+
+    <div class="privacy-note">This is a free analysis. No credit card required.</div>
+
+    <!-- Dev preview button — click to skip upload and see last real result -->
+    <div style="text-align:center;margin-top:20px;">
+      <button onclick="previewTestData()" style="background:none;border:none;color:#555;font-size:0.8rem;cursor:pointer;text-decoration:underline;">
+        Preview last result (no upload needed)
+      </button>
+    </div>
+  </div>
+
+  <!-- ── LOADING ── -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <div class="loading-title">Analyzing Your Statements…</div>
+    <div class="loading-sub">
+      This takes about 30–60 seconds. Please don't close this page.
+    </div>
+  </div>
+
+  <!-- ── ERROR ── -->
+  <div id="error-state">
+    <div class="error-title">Something went wrong</div>
+    <div class="error-msg" id="error-msg">We couldn't process your statements.</div>
+    <button class="btn-retry" onclick="resetForm()">Try Again</button>
+  </div>
+
+  <!-- ── RESULTS ── -->
+  <div id="results">
+    <!-- Filled in by JS -->
+  </div>
+
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────
+// CONFIG — update this URL once you deploy the backend to Railway
+// For local testing: "http://localhost:5050/analyze"
+// For production:    "https://your-app.railway.app/analyze"
+// ─────────────────────────────────────────────────────────────
+const API_URL = "http://localhost:5050/analyze";
+
+// ── Test data (last real result — for UI iteration without re-uploading) ──────
+const TEST_DATA = {"actual_months":3,"categories":[{"benchmark_avg":350,"benchmark_flag":"normal","benchmark_note":"Average US household spends ~$350/mo dining out","monthly_average":451.53,"name":"Dining Out","total":1354.6,"trend":"flat","trend_pct":11},{"benchmark_avg":500,"benchmark_flag":"normal","benchmark_note":"Average US household spends ~$500/mo on groceries","monthly_average":181.62,"name":"Groceries","total":544.87,"trend":"up","trend_pct":25},{"benchmark_avg":219,"benchmark_flag":"normal","benchmark_note":"Average American pays $219/mo in subscriptions (Forbes 2024)","monthly_average":102.87,"name":"Subscriptions & Streaming","total":308.6,"trend":"up","trend_pct":360},{"benchmark_avg":400,"benchmark_flag":"normal","benchmark_note":null,"monthly_average":235.42,"name":"Shopping","total":706.27,"trend":"up","trend_pct":58},{"monthly_average":191.71,"name":"Transportation","total":575.12,"trend":"up","trend_pct":387},{"monthly_average":11.3,"name":"Utilities & Phone","total":33.9,"trend":"flat","trend_pct":0},{"monthly_average":239.66,"name":"Entertainment","total":718.99,"trend":"up","trend_pct":23},{"monthly_average":16.33,"name":"Personal Care","total":49.0,"trend":"down","trend_pct":-55},{"monthly_average":274.9,"name":"Kids & Family","total":824.7,"trend":"down","trend_pct":-84},{"benchmark_avg":0,"benchmark_flag":"high","benchmark_note":"Bank and card fees are 100% avoidable with the right system","monthly_average":92.0,"name":"Fees & Charges","total":276.0,"trend":"up","trend_pct":93}],"fees":[{"count":3,"total":116.0,"type":"Bank and card fees"},{"count":5,"total":160.0,"type":"ATM / cash withdrawals (untraceable spend)"}],"month_keys":["2026-03","2026-04","2026-05"],"monthly_average":1797.35,"prospect":{"email":"josh@joshmasters.com.au","name":"Josh","phone":"test"},"revelations":[{"detail":"A single ALSA Internet bus or coach booking for $90.14 signals travel is becoming a regular line item worth planning for proactively.","headline":"Your Transportation spend rocketed 387% — that's $191.71/mo now versus near-zero three months ago.","impact_monthly":191.71,"type":"spike"},{"detail":"With TM Digital Granada ($29.90/mo) and RACE ($19.90) also running, it's worth confirming which of these are intentional recurring commitments versus one-offs that slipped through.","headline":"Subscriptions jumped 360%, driven largely by a $199 Trusted Housesitters charge that may only appear once.","impact_monthly":102.87,"type":"subscription"},{"detail":"The ATM withdrawals alone averaged $32/visit across 5 trips, and since cash is untracked it may be quietly inflating several other spending categories beyond what the data can show.","headline":"You spent $276 in bank and card fees plus $160 in untraceable ATM cash withdrawals — that's $436 across 3 months.","impact_monthly":92.0,"type":"fee"},{"detail":"At $239.66/mo in Entertainment overall, this one transaction represents roughly 1.5 months of your average entertainment spend landing in a single evening.","headline":"A single night at El Orejas cost $369.50 — more than your entire monthly grocery bill.","impact_monthly":239.66,"type":"spike"},{"detail":"The trend is flat at 11%, so this isn't accelerating, but at $451.53/mo it's your single largest discretionary category and the clearest lever if you're looking to redirect cash flow.","headline":"Your Dining Out total hit $1,354.60 over 3 months — nearly as much as Groceries ($544.87) and Shopping ($706.27) combined.","impact_monthly":451.53,"type":"pattern"}],"subscriptions":[{"monthly_cost":199.0,"months_seen":1,"name":"Trusted Housesitters"},{"monthly_cost":29.9,"months_seen":3,"name":"TM Digital Granada"},{"monthly_cost":19.9,"months_seen":1,"name":"RACE"}],"total_spend":5392.05,"transaction_count":229};
+
+function previewTestData() {
+  document.getElementById("upload-form").style.display = "none";
+  showResults(TEST_DATA, "Josh");
+}
+
+// ── File handling ─────────────────────────────────────────────
+let selectedFiles = [];
+
+const fileInput = document.getElementById("f-files");
+const fileList  = document.getElementById("file-list");
+const uploadZone = document.getElementById("upload-zone");
+
+fileInput.addEventListener("change", () => {
+  addFiles(Array.from(fileInput.files));
+  fileInput.value = "";
+});
+
+uploadZone.addEventListener("dragover", e => { e.preventDefault(); uploadZone.classList.add("drag-over"); });
+uploadZone.addEventListener("dragleave", () => uploadZone.classList.remove("drag-over"));
+uploadZone.addEventListener("drop", e => {
+  e.preventDefault();
+  uploadZone.classList.remove("drag-over");
+  addFiles(Array.from(e.dataTransfer.files).filter(f => f.name.endsWith(".pdf")));
+});
+
+function addFiles(newFiles) {
+  newFiles.forEach(f => {
+    if (!selectedFiles.find(x => x.name === f.name && x.size === f.size)) {
+      selectedFiles.push(f);
+    }
+  });
+  renderFileList();
+}
+
+function removeFile(idx) {
+  selectedFiles.splice(idx, 1);
+  renderFileList();
+}
+
+function renderFileList() {
+  fileList.innerHTML = selectedFiles.map((f, i) => `
+    <div class="file-item">
+      <span class="file-item-icon">📄</span>
+      <span>${f.name}</span>
+      <button class="file-remove" onclick="removeFile(${i})" title="Remove">✕</button>
+    </div>
+  `).join("");
+}
+
+// ── Form submission ───────────────────────────────────────────
+async function submitForm() {
+  const name  = document.getElementById("f-name").value.trim();
+  const email = document.getElementById("f-email").value.trim();
+  const phone = document.getElementById("f-phone").value.trim();
+
+  if (!name || !email) {
+    alert("Please enter your name and email.");
+    return;
+  }
+  if (selectedFiles.length === 0) {
+    alert("Please upload at least one PDF statement.");
+    return;
+  }
+
+  // Show loading
+  document.getElementById("upload-form").style.display = "none";
+  document.getElementById("loading").style.display = "block";
+  document.getElementById("error-state").style.display = "none";
+  document.getElementById("results").style.display = "none";
+
+  const form = new FormData();
+  form.append("name",  name);
+  form.append("email", email);
+  form.append("phone", phone);
+  selectedFiles.forEach(f => form.append("files", f));
+
+  try {
+    const resp = await fetch(API_URL, { method: "POST", body: form });
+    const data = await resp.json();
+
+    if (!resp.ok || data.error) {
+      showError(data.error || "Unknown error occurred.");
+      return;
+    }
+
+    showResults(data, name);
+  } catch (err) {
+    showError("Could not reach the analysis server. Make sure the backend is running.");
+  }
+}
+
+function showError(msg) {
+  document.getElementById("loading").style.display = "none";
+  document.getElementById("error-msg").textContent = msg;
+  document.getElementById("error-state").style.display = "block";
+}
+
+function resetForm() {
+  document.getElementById("error-state").style.display = "none";
+  document.getElementById("upload-form").style.display = "block";
+}
+
+// ── Results renderer ──────────────────────────────────────────
+function fmt(n) {
+  return "$" + Math.round(n).toLocaleString();
+}
+
+function fmtDecimal(n) {
+  return "$" + Number(n).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+function iconForType(type) {
+  const icons = { spike: "📈", subscription: "🔄", fee: "⚠️", pattern: "🔍" };
+  return icons[type] || "💡";
+}
+
+function showResults(data, firstName) {
+  document.getElementById("loading").style.display = "none";
+
+  const categories = (data.categories || [])
+    .filter(c => c.monthly_average > 0)
+    .sort((a, b) => b.monthly_average - a.monthly_average)
+    .slice(0, 10);
+
+  const maxCat = categories.length ? Math.max(...categories.map(c => c.monthly_average)) : 1;
+
+  const revelations = data.revelations || [];
+  const subscriptions = data.subscriptions || [];
+  const fees = data.fees || [];
+  const totalSubscriptions = subscriptions.reduce((s, x) => s + (x.monthly_cost || 0), 0);
+  const totalFees = fees.reduce((s, x) => s + (x.total || 0), 0);
+
+  // Headline: sum of revelation impact or fallback to total spend
+  const totalImpact = revelations.reduce((s, r) => s + (r.impact_monthly || 0), 0);
+  const headlineDollar = totalImpact > 0 ? totalImpact : Math.round((data.monthly_average || 0) * 0.15);
+
+  // Category bars
+  const catBars = categories.map(cat => {
+    const pct = Math.max(3, Math.round((cat.monthly_average / maxCat) * 100));
+    const isHigh = cat.benchmark_flag === "high";
+    const isElevated = cat.benchmark_flag === "elevated";
+    const fillClass = isHigh ? "red" : "gold";
+    const valClass  = isHigh ? "red" : "dark";
+
+    let trendBadge = "";
+    if (cat.trend === "up" && cat.trend_pct >= 20) {
+      trendBadge = `<span class="trend-badge trend-up">↑ ${cat.trend_pct}%</span>`;
+    } else if (cat.trend === "down" && cat.trend_pct <= -15) {
+      trendBadge = `<span class="trend-badge trend-down">↓ ${Math.abs(cat.trend_pct)}%</span>`;
+    }
+
+    let bmNote = "";
+    if (cat.benchmark_note && cat.benchmark_avg) {
+      const bmClass = isHigh ? "high" : isElevated ? "elevated" : "";
+      const vs = cat.monthly_average > cat.benchmark_avg
+        ? `${fmt(cat.monthly_average - cat.benchmark_avg)} above average`
+        : "within average range";
+      bmNote = `<div class="bar-benchmark ${bmClass}">${vs} · avg ${fmt(cat.benchmark_avg)}/mo</div>`;
+    }
+
+    return `
+      <div class="bar-row">
+        <div class="bar-label-row">
+          <span class="bar-label">${cat.name}${trendBadge}</span>
+          <span class="bar-value ${valClass}">${fmt(cat.monthly_average)}<span style="font-size:0.75rem;font-weight:400;color:var(--text-light)">/mo</span></span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill ${fillClass}" style="width: ${pct}%"></div>
+        </div>
+        ${bmNote}
+      </div>`;
+  }).join("");
+
+  // Revelation cards
+  const revelationCards = revelations.map(r => `
+    <div class="result-card">
+      <div class="card-icon ${r.type}">
+        ${iconForType(r.type)}
+      </div>
+      <div class="card-content">
+        <div class="card-headline">${r.headline}</div>
+        <div class="card-detail">${r.detail}</div>
+        ${r.impact_monthly ? `<div class="card-impact">~${fmt(r.impact_monthly)}/mo opportunity</div>` : ""}
+      </div>
+    </div>`).join("");
+
+  // Subscription list
+  let subsHTML = "";
+  if (subscriptions.length > 0) {
+    const subItems = subscriptions.map(s => {
+      const warn = s.months_seen < 3 ? `<span class="sub-warn">· only ${s.months_seen} mo</span>` : "";
+      return `
+        <div class="sub-item">
+          <span class="sub-name">${s.name}${warn}</span>
+          <span class="sub-cost">${fmt(s.monthly_cost)}/mo</span>
+        </div>`;
+    }).join("");
+
+    subsHTML = `
+      <div class="section-title">Subscriptions & Recurring</div>
+      <div class="subs-card">
+        ${subItems}
+        <div class="subs-total">
+          <span class="subs-total-label">Total monthly recurring</span>
+          <span class="subs-total-val">${fmt(totalSubscriptions)}/mo</span>
+        </div>
+      </div>`;
+  }
+
+  // Fees callout
+  let feesHTML = "";
+  if (fees.length > 0) {
+    const feeItems = fees.map(f => `
+      <div class="fee-item">
+        <span>${f.type}</span>
+        <span>${fmt(f.total)} (${f.count}×)</span>
+      </div>`).join("");
+
+    feesHTML = `
+      <div class="fees-callout">
+        <div class="fees-callout-title">⚠️ Avoidable Fees Paid</div>
+        ${feeItems}
+        <div class="fee-total">Total fees (3 months): ${fmt(totalFees)} · ${fmt(totalFees / 3)}/mo · ${fmt(totalFees * 4)}/year annualized</div>
+      </div>`;
+  }
+
+  const resultsEl = document.getElementById("results");
+  resultsEl.innerHTML = `
+    <!-- Header -->
+    <div class="results-intro">
+      <img src="https://assets.cdn.filesafe.space/IKw1E7VUZwSDe8WFAxIM/media/68f11ca74711d51c4dae071c.png"
+           alt="Budgetdog" style="width:180px;margin-bottom:24px;display:block;margin-left:auto;margin-right:auto;" />
+      <div style="font-family:'Barlow Semi Condensed',sans-serif;font-size:2.9rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#fff;line-height:1.1;margin-bottom:20px;">
+        Your 3-Month<br>Money Snapshot
+      </div>
+      <p style="font-size:1.1rem;color:#ddd;line-height:1.7;margin:0;text-align:center;">
+        ${firstName ? `${firstName}, in` : "In"} the last three months, you spent
+        <span style="color:var(--brand-gold);font-weight:700;">${fmt(data.total_spend)}</span>.
+        That works out to about
+        <span style="color:#fff;font-weight:700;">${fmt(data.monthly_average)} a month</span>
+        — across ${data.transaction_count || ""} transactions across your statements.
+      </p>
+    </div>
+
+    <!-- Category breakdown -->
+    <div class="section-title">Your Spending by Category</div>
+    <div class="categories-card">
+      ${catBars}
+    </div>
+
+    <!-- Subscriptions -->
+    ${subsHTML}
+
+    <!-- Fees -->
+    ${feesHTML}
+
+    <!-- Aha moments -->
+    ${revelationCards ? `
+      <div class="section-title">What We Found</div>
+      ${revelationCards}
+    ` : ""}
+
+    <!-- CTA -->
+    <div class="cta-section">
+      <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-top:44px;margin-bottom:8px;">
+        <svg width="24" height="26" viewBox="0 0 22 24" fill="none">
+          <path d="M4 3L11 10L18 3" stroke="#C5A54B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M4 11L11 18L18 11" stroke="#C5A54B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+        </svg>
+        <span style="font-family:'Barlow Semi Condensed',sans-serif;font-size:2.2rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--brand-gold);line-height:1;">Next Step</span>
+        <svg width="24" height="26" viewBox="0 0 22 24" fill="none">
+          <path d="M4 3L11 10L18 3" stroke="#C5A54B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M4 11L11 18L18 11" stroke="#C5A54B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+        </svg>
+      </div>
+      <a href="https://f2fchallenge.com/book-my-review" target="_blank" class="btn-cta">
+        Book My Free 15-Minute Review
+      </a>
+      <p class="cta-helper">
+        We'll walk you through these numbers together and show you exactly where to start.
+      </p>
+    </div>
+
+    <div class="disclaimer">
+      This analysis is for informational purposes only and does not constitute personalized financial advice.
+      Results are based on the transactions detected in your uploaded statements.
+    </div>
+  `;
+
+  resultsEl.style.display = "block";
+
+  // Animate bars in after render
+  setTimeout(() => {
+    resultsEl.querySelectorAll(".bar-fill").forEach(b => {
+      const w = b.style.width;
+      b.style.width = "0";
+      requestAnimationFrame(() => { b.style.width = w; });
+    });
+  }, 50);
+}
+</script>
+</body>
+</html>
