@@ -13,7 +13,7 @@ Architecture:
 import os, json, base64, re
 from collections import defaultdict
 from datetime import datetime
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import anthropic
 from dotenv import load_dotenv
@@ -337,6 +337,10 @@ def analyze():
     except Exception as e:
         return jsonify({"error": f"Analysis failed: {str(e)}"}), 500
 
+
+@app.route("/", methods=["GET"])
+def index():
+    return send_from_directory(os.path.dirname(__file__), "lookback.html")
 
 @app.route("/health", methods=["GET"])
 def health():
