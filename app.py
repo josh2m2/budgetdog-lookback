@@ -30,18 +30,31 @@ CORS(app)
 claude = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
 CATEGORIES = [
-    "Food Delivery", "Dining Out", "Groceries", "Subscriptions & Streaming",
-    "Shopping", "Transportation", "Utilities & Phone", "Healthcare",
-    "Entertainment", "Personal Care", "Kids & Family", "Fees & Charges", "Other"
+    "Investments & Savings",     # Vanguard, Fidelity, Schwab, River, Coinbase, brokerage transfers
+    "Debt Payments",             # Mortgage, car loan, student loan, personal loan
+    "Food Delivery",             # DoorDash, UberEats, Deliveroo
+    "Dining Out",                # Restaurants, cafes, bars
+    "Groceries",                 # Supermarkets, Costco, Walmart grocery
+    "Subscriptions & Streaming", # Netflix, Spotify, gym, SaaS — NOT investments
+    "Shopping",                  # Amazon, retail, clothing, electronics
+    "Transportation",            # Gas, Uber, parking, car maintenance
+    "Utilities & Phone",         # Electric, water, internet, phone bill
+    "Insurance",                 # Health, auto, home, life insurance premiums
+    "Healthcare",                # Doctors, pharmacy, dental, therapy
+    "Entertainment",             # Concerts, sports, hobbies, gaming
+    "Personal Care",             # Salon, spa, barber, skincare
+    "Kids & Family",             # Daycare, school, kids activities
+    "Fees & Charges",            # Bank fees, late fees, card annual fees only
+    "Other",                     # Genuinely uncategorisable
 ]
 
 BENCHMARKS = {
-    "Food Delivery":           {"avg_monthly": 165,  "caution": 250,  "flag": 400,  "note": "Average US household spends ~$165/mo on food delivery"},
-    "Dining Out":              {"avg_monthly": 350,  "caution": 500,  "flag": 800,  "note": "Average US household spends ~$350/mo dining out"},
-    "Subscriptions & Streaming": {"avg_monthly": 219, "caution": 300, "flag": 450,  "note": "Average American pays $219/mo in subscriptions (Forbes 2024)"},
-    "Groceries":               {"avg_monthly": 500,  "caution": 900,  "flag": 1200, "note": "Average US household spends ~$500/mo on groceries"},
-    "Shopping":                {"avg_monthly": 400,  "caution": 700,  "flag": 1200, "note": None},
-    "Fees & Charges":          {"avg_monthly": 0,    "caution": 1,    "flag": 1,    "note": "Bank and card fees are 100% avoidable with the right system"},
+    "Food Delivery":              {"avg_monthly": 165,  "caution": 250,  "flag": 400,   "note": "Average US household spends ~$165/mo on food delivery"},
+    "Dining Out":                 {"avg_monthly": 350,  "caution": 500,  "flag": 800,   "note": "Average US household spends ~$350/mo dining out"},
+    "Subscriptions & Streaming":  {"avg_monthly": 219,  "caution": 300,  "flag": 450,   "note": "Average American pays $219/mo in subscriptions (Forbes 2024)"},
+    "Groceries":                  {"avg_monthly": 500,  "caution": 900,  "flag": 1200,  "note": "Average US household spends ~$500/mo on groceries"},
+    "Shopping":                   {"avg_monthly": 400,  "caution": 700,  "flag": 1200,  "note": None},
+    "Fees & Charges":             {"avg_monthly": 0,    "caution": 1,    "flag": 1,     "note": "Bank and card fees are 100% avoidable with the right system"},
 }
 
 
@@ -79,20 +92,43 @@ def extract_transactions(pdf_bytes: bytes) -> list[dict]:
                         "Return ONLY a valid JSON array. Each item must have exactly these fields:\n"
                         "  - \"date\": transaction date as \"YYYY-MM-DD\"\n"
                         "  - \"merchant\": clean, human-readable name "
-                        "(e.g. \"DoorDash\" not \"DOORDASH*ORDER9182\", \"Netflix\" not \"NETFLIX.COM\")\n"
+                        "(e.g. \"DoorDash\" not \"DOORDASH*ORDER9182\", \"Netflix\" not \"NETFLIX.COM\", "
+                        "\"Vanguard\" not \"VANGUARD BROKERAGE\")\n"
                         "  - \"amount\": the charge as a positive number (e.g. 12.99)\n"
                         f"  - \"category\": one of these EXACT values: {cat_list}\n\n"
-                        "EXCLUDE (do not include):\n"
-                        "  - Internal transfers between the person's own accounts\n"
-                        "  - Credit card bill payments (e.g. 'Payment to Chase', 'AUTOPAY THANK YOU') — "
-                        "the individual charges on the card are the real spending\n"
-                        "  - Payroll deposits, refunds, cashback, or any income\n\n"
-                        "Categorisation guide:\n"
-                        "  - UberEats, DoorDash, Deliveroo, Grubhub → Food Delivery\n"
-                        "  - Restaurants, cafes, bars → Dining Out\n"
-                        "  - Netflix, Spotify, Amazon Prime, gym, SaaS → Subscriptions & Streaming\n"
-                        "  - Overdraft fees, late fees, ATM fees, annual card fees → Fees & Charges\n"
-                        "  - ATM cash withdrawals → Fees & Charges\n\n"
+                        "EXCLUDE entirely (do not include these at all):\n"
+                        "  - Credit card bill payments from a checking account "
+                        "(e.g. 'Payment to Chase', 'AUTOPAY THANK YOU', 'AMEX PAYMENT') — "
+                        "the individual charges on the card are the real spending, not this lump payment\n"
+                        "  - Payroll deposits, direct deposits, refunds, cashback, or any income\n"
+                        "  - Transfers between the person's own bank accounts (e.g. 'Transfer to Savings')\n\n"
+                        "CATEGORISATION GUIDE — follow these exactly:\n\n"
+                        "Investments & Savings (transfer to investment accounts — INCLUDE these, do not exclude):\n"
+                        "  Vanguard, Fidelity, Charles Schwab, River, Coinbase, Robinhood, E*TRADE,\n"
+                        "  TD Ameritrade, Interactive Brokers, Betterment, Wealthfront, Acorns,\n"
+                        "  M1 Finance, TIAA, any brokerage or investment platform transfer,\n"
+                        "  Bitcoin purchases, cryptocurrency purchases, 401k contributions,\n"
+                        "  IRA contributions, any transfer described as 'investment' or 'brokerage'\n\n"
+                        "Debt Payments:\n"
+                        "  Mortgage payments, car loan payments, student loan payments (Navient, Sallie Mae,\n"
+                        "  FedLoan, MOHELA), personal loan payments — any scheduled debt repayment\n\n"
+                        "Insurance:\n"
+                        "  Health insurance premiums, auto insurance (Geico, Progressive, State Farm, Allstate),\n"
+                        "  home/renters insurance, life insurance, umbrella policies\n\n"
+                        "Food Delivery: DoorDash, UberEats, Deliveroo, Grubhub, Instacart (restaurant orders)\n"
+                        "Dining Out: restaurants, cafes, bars, coffee shops\n"
+                        "Groceries: supermarkets, Costco, Walmart grocery, Trader Joe's, Whole Foods\n"
+                        "Subscriptions & Streaming: Netflix, Spotify, Apple TV, Disney+, Hulu, gym memberships,\n"
+                        "  SaaS tools, magazine subscriptions — NOT investment platforms\n"
+                        "Shopping: Amazon (retail purchases), clothing, electronics, home goods\n"
+                        "Transportation: gas stations, Uber/Lyft rides, parking, car maintenance, tolls\n"
+                        "Utilities & Phone: electric, water, gas utility, internet, mobile phone bill\n"
+                        "Healthcare: doctors, pharmacy, dental, vision, therapy, hospital\n"
+                        "Entertainment: concerts, sports tickets, movies, gaming, hobbies\n"
+                        "Personal Care: salon, spa, barber, skincare, gym (if not subscription)\n"
+                        "Kids & Family: daycare, school fees, kids activities, tutoring\n"
+                        "Fees & Charges: bank overdraft fees, late payment fees, annual card fees ONLY\n"
+                        "  (NOT ATM cash withdrawals — those go to Other)\n\n"
                         "Return ONLY the JSON array. No explanation, no markdown fences."
                     ),
                 },
@@ -204,26 +240,14 @@ def aggregate(transactions: list[dict], num_months: int = 3) -> dict:
         })
     subscriptions.sort(key=lambda x: x["monthly_cost"], reverse=True)
 
-    # Fee detection
+    # Fee detection — only what Claude explicitly categorised as Fees & Charges
     fees = []
-    fee_txns  = [(dt, t) for dt, t in dated if t.get("category") == "Fees & Charges"]
-    cash_txns = [(dt, t) for dt, t in dated if any(
-        kw in t.get("merchant", "").upper()
-        for kw in ["ATM", "CAJERO", "CASH WITHDRAWAL", "RETIRO"]
-    )]
-
-    non_cash_fees = [(dt, t) for dt, t in fee_txns if (dt, t) not in cash_txns]
-    if non_cash_fees:
+    fee_txns = [(dt, t) for dt, t in dated if t.get("category") == "Fees & Charges"]
+    if fee_txns:
         fees.append({
             "type":  "Bank and card fees",
-            "total": round(sum(float(t.get("amount", 0)) for _, t in non_cash_fees), 2),
-            "count": len(non_cash_fees),
-        })
-    if cash_txns:
-        fees.append({
-            "type":  "ATM / cash withdrawals (untraceable spend)",
-            "total": round(sum(float(t.get("amount", 0)) for _, t in cash_txns), 2),
-            "count": len(cash_txns),
+            "total": round(sum(float(t.get("amount", 0)) for _, t in fee_txns), 2),
+            "count": len(fee_txns),
         })
 
     return {
