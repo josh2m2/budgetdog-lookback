@@ -12,6 +12,7 @@ Architecture:
 
 import os, json, base64, re
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
@@ -66,6 +67,25 @@ def extract_json(text: str) -> str:
     return text.strip()
 
 
+def deduplicate(transactions: list[dict]) -> list[dict]:
+    """
+    Remove transactions that appear in multiple uploaded files.
+    Matches on date + amount + first 6 chars of merchant name.
+    Keeps the first occurrence found.
+    """
+    seen = set()
+    deduped = []
+    for t in transactions:
+        date     = t.get("date", "")
+        amount   = round(float(t.get("amount", 0)), 2)
+        merchant = t.get("merchant", "").strip().lower()[:6]
+        key = (date, amount, merchant)
+        if key not in seen:
+            seen.add(key)
+            deduped.append(t)
+    return deduped
+
+
 def extract_transactions(pdf_bytes: bytes) -> list[dict]:
     """
     Claude reads the PDF and returns each transaction already categorised.
@@ -76,7 +96,7 @@ def extract_transactions(pdf_bytes: bytes) -> list[dict]:
     cat_list = ", ".join(CATEGORIES)
 
     response = claude.messages.create(
-        model="claude-sonnet-4-6",
+        model="claude-haiku-4-5-20251001",
         max_tokens=8192,
         messages=[{
             "role": "user",
@@ -328,21 +348,39 @@ def analyze():
     if not files or all(f.filename == "" for f in files):
         return jsonify({"error": "No files uploaded."}), 400
 
-    all_transactions: list[dict] = []
     warnings: list[str] = []
 
+    # Read all file bytes upfront (Flask file objects aren't thread-safe)
+    pdf_files = []
     for f in files:
         if not f.filename.lower().endswith(".pdf"):
             warnings.append(f"Skipped {f.filename} — only PDF files are supported.")
             continue
-        try:
-            txns = extract_transactions(f.read())
-            all_transactions.extend(txns)
-        except Exception as e:
-            warnings.append(f"Could not parse {f.filename}: {str(e)}")
+        pdf_files.append((f.filename, f.read()))
+
+    if not pdf_files:
+        return jsonify({"error": "No PDF files uploaded."}), 400
+
+    # Process all PDFs in parallel — wall-clock time = slowest single file
+    all_transactions: list[dict] = []
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        future_to_name = {
+            executor.submit(extract_transactions, pdf_bytes): filename
+            for filename, pdf_bytes in pdf_files
+        }
+        for future in as_completed(future_to_name):
+            filename = future_to_name[future]
+            try:
+                txns = future.result()
+                all_transactions.extend(txns)
+            except Exception as e:
+                warnings.append(f"Could not parse {filename}: {str(e)}")
 
     if not all_transactions:
         return jsonify({"error": "Could not extract any transactions. " + " ".join(warnings)}), 400
+
+    # Deduplicate — removes transactions that appear in both bank and CC statements
+    all_transactions = deduplicate(all_transactions)
 
     try:
         summary      = aggregate(all_transactions)
@@ -350,9 +388,9 @@ def analyze():
 
         result = {
             **summary,
-            "revelations":      revelations,
+            "revelations":       revelations,
             "transaction_count": len(all_transactions),
-            "prospect":         {"name": name, "email": email, "phone": phone},
+            "prospect":          {"name": name, "email": email, "phone": phone},
         }
         if warnings:
             result["warnings"] = warnings
